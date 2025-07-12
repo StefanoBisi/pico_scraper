@@ -11,6 +11,8 @@ class PageContent(Enum):
     No = 0
     Title = 1
     CartData = 2
+    Tag = 3
+    Description = 4
 
 
 @dataclass
@@ -18,10 +20,22 @@ class GameMetadata:
     title: str
     developer: str
     release_date: str
+    genre: str
+    description: str
+    players: int
 
 
 def empty_metadata() -> GameMetadata:
-    return GameMetadata('', '', '')
+    return GameMetadata('', '', '', '', '', 1)
+
+
+def print_metadata(metadata: GameMetadata):
+    print(metadata.title)
+    print(metadata.release_date)
+    print(metadata.developer)
+    print(metadata.genre)
+    print(metadata.description)
+    print(metadata.players)
 
 
 def parse_cart_data(cart_data: str) -> tuple[str, str]:
@@ -29,17 +43,25 @@ def parse_cart_data(cart_data: str) -> tuple[str, str]:
     for line in cart_data.splitlines():
         if check_data:
             parts = line.strip().split(',')
-            return parts[6], parts[8]
+            return parts[6].strip('"'), parts[8].strip('"')
 
         if line.strip() == 'pdat=[':
             check_data = True
     return '', ''
 
 
+def search_attribute(attrs: list[tuple[str,str|None]], name: str) -> str:
+    for attr in attrs:
+        if attr[0] == name and attr[1]:
+            return attr[1]
+    return ''
+
+
 class Pico8HTMLParser(HTMLParser):
 
     _current: GameMetadata
     _next_data: PageContent
+    _tag_cache = ''
 
 
     def __init__(self):
@@ -53,9 +75,18 @@ class Pico8HTMLParser(HTMLParser):
             case 'title':
                 self._next_data = PageContent.Title
             case 'script':
-                for attr in attrs:
-                    if attr[0] == 'id' and attr[1] == 'cart_data_script':
-                        self._next_data = PageContent.CartData
+                if search_attribute(attrs, 'id') == 'cart_data_script':
+                    self._next_data = PageContent.CartData
+            case 'span':
+                if search_attribute(attrs, 'class') == 'tag':
+                    self._next_data = PageContent.Tag
+            case 'h2':
+                if self._tag_cache == 'h1':
+                    self._next_data = PageContent.Description
+            case 'p':
+                if self._tag_cache == 'h1':
+                    self._next_data = PageContent.Description
+        self._tag_cache = tag
 
 
     def handle_endtag(self, tag):
@@ -70,6 +101,17 @@ class Pico8HTMLParser(HTMLParser):
                 release_date, developer = parse_cart_data(data)
                 self._current.release_date = release_date
                 self._current.developer = developer
+            case PageContent.Tag:
+                match data.strip():
+                    case 'singleplayer':
+                        self._current.players = 1
+                    case 'multiplayer':
+                        self._current.players = 2
+                    case _:
+                        if len(self._current.genre) == 0:
+                            self._current.genre = data
+            case PageContent.Description:
+                self._current.description = data
 
         self._next_data = PageContent.No
     
@@ -109,10 +151,13 @@ def get_game_metadata(id: str) -> GameMetadata:
 
 
 def main():
-    metadata = get_game_metadata('100000')
-    print(metadata.title)
-    print(metadata.release_date)
-    print(metadata.developer)
+    with open('tmp/list.txt', 'r') as f:
+        for line in f.readlines():
+            id = line.split('#')[0].strip()
+            metadata = get_game_metadata(id)
+            print_metadata(metadata)
+            print()
+
 
 if __name__ == '__main__':
     main()
