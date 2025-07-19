@@ -2,6 +2,7 @@ from enum import Enum
 from dataclasses import dataclass
 import urllib.request
 from html.parser import HTMLParser
+from datetime import datetime
 
 
 __BASE_URL = 'https://www.lexaloffle.com/bbs/?pid={id}'
@@ -18,19 +19,22 @@ class PageContent(Enum):
 @dataclass
 class GameMetadata:
     title: str
+    cart_url: str
+    cover_url: str
     developer: str
-    release_date: str
+    release_date: datetime
     genre: str
     description: str
     players: int
 
 
 def empty_metadata() -> GameMetadata:
-    return GameMetadata('', '', '', '', '', 1)
+    return GameMetadata('', '', '', '', datetime.fromtimestamp(0), '', '', 1)
 
 
 def print_metadata(metadata: GameMetadata):
     print(f'{metadata.title}\n---')
+    print(f'{metadata.cover_url}\n---')
     print(f'{metadata.release_date}\n---')
     print(f'{metadata.developer}\n---')
     print(f'{metadata.genre}\n---')
@@ -101,7 +105,9 @@ class Pico8HTMLParser(HTMLParser):
             case 'p':
                 if self._loading_description:
                     self._next_data = PageContent.Description
-                    check_description = True
+            case 'meta':
+                if search_attribute(attrs, 'property') == 'og:image':
+                    self._current.cover_url = search_attribute(attrs, 'content')
         self._tag_cache = tag
         self._loading_description = check_description
 
@@ -117,8 +123,8 @@ class Pico8HTMLParser(HTMLParser):
             case PageContent.Title:
                 self._current.title = data
             case PageContent.CartData:
-                release_date, developer = parse_cart_data(data)
-                self._current.release_date = release_date
+                release_date_str, developer = parse_cart_data(data)
+                self._current.release_date = datetime.strptime(release_date_str, '%Y-%m-%d %H:%M:%S')
                 self._current.developer = developer
             case PageContent.Tag:
                 match data.strip():
