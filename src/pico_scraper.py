@@ -30,12 +30,12 @@ def empty_metadata() -> GameMetadata:
 
 
 def print_metadata(metadata: GameMetadata):
-    print(metadata.title)
-    print(metadata.release_date)
-    print(metadata.developer)
-    print(metadata.genre)
-    print(metadata.description)
-    print(metadata.players)
+    print(f'{metadata.title}\n---')
+    print(f'{metadata.release_date}\n---')
+    print(f'{metadata.developer}\n---')
+    print(f'{metadata.genre}\n---')
+    print(f'{metadata.description}\n---')
+    print(f'{metadata.players}\n---')
 
 
 def parse_cart_data(cart_data: str) -> tuple[str, str]:
@@ -62,6 +62,8 @@ class Pico8HTMLParser(HTMLParser):
     _current: GameMetadata
     _next_data: PageContent
     _tag_cache = ''
+    _cartembed_nesting = 0
+    _loading_description = False
 
 
     def __init__(self):
@@ -71,6 +73,9 @@ class Pico8HTMLParser(HTMLParser):
 
 
     def handle_starttag(self, tag, attrs):
+        check_description = False
+        self._cartembed_nesting += 1 if (self._cartembed_nesting > 0) else 0
+        
         match tag:
             case 'title':
                 self._next_data = PageContent.Title
@@ -80,17 +85,31 @@ class Pico8HTMLParser(HTMLParser):
             case 'span':
                 if search_attribute(attrs, 'class') == 'tag':
                     self._next_data = PageContent.Tag
+            case 'div':
+                if search_attribute(attrs, 'id').startswith('cartembed_'):
+                    self._cartembed_nesting = 1
+            case 'br':
+                check_description = self._loading_description
+            case 'h1':
+                if self._loading_description and self._tag_cache not in ['h2', 'p']:
+                    self._next_data = PageContent.Description
+                    check_description = True
             case 'h2':
-                if self._tag_cache == 'h1':
+                if self._loading_description and self._tag_cache != 'p':
                     self._next_data = PageContent.Description
+                    check_description = True
             case 'p':
-                if self._tag_cache == 'h1':
+                if self._loading_description:
                     self._next_data = PageContent.Description
+                    check_description = True
         self._tag_cache = tag
+        self._loading_description = check_description
 
 
     def handle_endtag(self, tag):
-        pass
+        if self._cartembed_nesting > 0:
+            self._cartembed_nesting -= 1
+            self._loading_description = (self._cartembed_nesting) == 0
 
 
     def handle_data(self, data):
@@ -111,7 +130,8 @@ class Pico8HTMLParser(HTMLParser):
                         if len(self._current.genre) == 0:
                             self._current.genre = data
             case PageContent.Description:
-                self._current.description = data
+                self._current.description += '\n' + data
+                self._current.description = self._current.description.strip('\n')
 
         self._next_data = PageContent.No
     
