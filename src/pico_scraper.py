@@ -29,11 +29,11 @@ class GameMetadata:
     players: int
 
 
-def empty_metadata() -> GameMetadata:
+def empty_metadata():
     return GameMetadata('', '', '', '', datetime.fromtimestamp(0), '', '', 1)
 
 
-def print_metadata(metadata: GameMetadata):
+def print_metadata(metadata):
     print(f'{metadata.title}\n---')
     print(f'{metadata.cart_url}\n---')
     print(f'{metadata.cover_url}\n---')
@@ -44,7 +44,7 @@ def print_metadata(metadata: GameMetadata):
     print(f'{metadata.players}\n---')
 
 
-def parse_cart_data(cart_data: str) -> tuple[str, str]:
+def parse_cart_data(cart_data):
     check_data = False
     for line in cart_data.splitlines():
         if check_data:
@@ -56,7 +56,7 @@ def parse_cart_data(cart_data: str) -> tuple[str, str]:
     return '', ''
 
 
-def search_attribute(attrs: list[tuple[str,str|None]], name: str) -> str:
+def search_attribute(attrs, name):
     for attr in attrs:
         if attr[0] == name and attr[1]:
             return attr[1]
@@ -165,25 +165,25 @@ class Pico8HTMLParser(HTMLParser):
         pass
 
 
-    def get_game_metadata(self, html_content: str) -> GameMetadata:
+    def get_game_metadata(self, html_content):
         self._current = empty_metadata()
         self.feed(html_content)
         return self._current
 
 
-def get_page_content(id: str) -> str:
+def get_page_content(id):
     url = _GAME_PAGE_BASE_URL.format(id = id)
     content = urllib.request.urlopen(url).read()
     return content.decode("utf-8")
 
 
-def get_game_metadata(id: str) -> GameMetadata:
+def get_game_metadata(id):
     content = get_page_content(id)
     parser = Pico8HTMLParser()
     return parser.get_game_metadata(content)
 
 
-def load_list(filepath: str) -> list[GameMetadata]:
+def load_list(filepath):
     metadata = []
     with open(filepath, 'r') as f:
         for line in f.readlines():

@@ -21,7 +21,8 @@ __DUMMY_XML_GAME = '''<game>
     	<publisher>Lexaloffe</publisher>
     	<genre>{tag}</genre>
     	<players>{players_nr}</players>
-    </game>'''
+    </game>
+'''
 __DUMMY_XML_CLOSE = '</gameList>'
 
 
@@ -35,7 +36,7 @@ def main():
         cart_path = f'/home/pi/RetroPie/roms/pico8/{game.title}.p8.png'
         download_image(game.cart_url, cart_path)
 
-        cover_path = '/home/pi/.emulationstation/downloaded_images/pico8'
+        cover_path = f'/home/pi/.emulationstation/downloaded_images/pico8/{game.title}.png'
         download_image(game.cover_url, cover_path)
 
         gamelist += __DUMMY_XML_GAME.format(
@@ -43,7 +44,7 @@ def main():
             name = game.title,
             description = game.description,
             cover = cover_path,
-            release_data = game.release_date.strftime('%Y%m%dT%H%M%S'),
+            release_date = game.release_date.strftime('%Y%m%dT%H%M%S'),
             developer = game.developer,
             tag = game.tag,
             players_nr = game.players
