@@ -5,7 +5,8 @@ from html.parser import HTMLParser
 from datetime import datetime
 
 
-__BASE_URL = 'https://www.lexaloffle.com/bbs/?pid={id}'
+__BASE_URL = 'https://www.lexaloffle.com'
+__GAME_PAGE_BASE_URL = __BASE_URL + '/bbs/?pid={id}'
 
 
 class PageContent(Enum):
@@ -23,7 +24,7 @@ class GameMetadata:
     cover_url: str
     developer: str
     release_date: datetime
-    genre: str
+    tag: str
     description: str
     players: int
 
@@ -37,7 +38,7 @@ def print_metadata(metadata: GameMetadata):
     print(f'{metadata.cover_url}\n---')
     print(f'{metadata.release_date}\n---')
     print(f'{metadata.developer}\n---')
-    print(f'{metadata.genre}\n---')
+    print(f'{metadata.tag}\n---')
     print(f'{metadata.description}\n---')
     print(f'{metadata.players}\n---')
 
@@ -108,6 +109,11 @@ class Pico8HTMLParser(HTMLParser):
             case 'meta':
                 if search_attribute(attrs, 'property') == 'og:image':
                     self._current.cover_url = search_attribute(attrs, 'content')
+            case 'a':
+                href = search_attribute(attrs, 'href')
+                if href.endswith('.p8.png'):
+                    self._current.cart_url = __BASE_URL + href
+
         self._tag_cache = tag
         self._loading_description = check_description
 
@@ -133,8 +139,8 @@ class Pico8HTMLParser(HTMLParser):
                     case 'multiplayer':
                         self._current.players = 2
                     case _:
-                        if len(self._current.genre) == 0:
-                            self._current.genre = data
+                        if len(self._current.tag) == 0:
+                            self._current.tag = data
             case PageContent.Description:
                 self._current.description += '\n' + data
                 self._current.description = self._current.description.strip('\n')
@@ -165,7 +171,7 @@ class Pico8HTMLParser(HTMLParser):
 
 
 def get_page_content(id: str) -> str:
-    url = __BASE_URL.format(id = id)
+    url = __GAME_PAGE_BASE_URL.format(id = id)
     content = urllib.request.urlopen(url).read()
     return content.decode("utf-8")
 
@@ -176,13 +182,20 @@ def get_game_metadata(id: str) -> GameMetadata:
     return parser.get_game_metadata(content)
 
 
-def main():
-    with open('tmp/list.txt', 'r') as f:
+def load_list(filepath: str) -> list[GameMetadata]:
+    metadata = []
+    with open(filepath, 'r') as f:
         for line in f.readlines():
             id = line.split('#')[0].strip()
-            metadata = get_game_metadata(id)
-            print_metadata(metadata)
-            print()
+            metadata.append(get_game_metadata(id))
+    return metadata
+
+
+def main():
+    metadata = load_list('tmp/list.txt')
+    for game in metadata:
+        print_metadata(game)
+        print()
 
 
 if __name__ == '__main__':
