@@ -83,38 +83,38 @@ class Pico8HTMLParser(HTMLParser):
         check_description = False
         self._cartembed_nesting += 1 if (self._cartembed_nesting > 0) else 0
         
-        match tag:
-            case 'title':
-                self._next_data = PageContent.Title
-            case 'script':
-                if search_attribute(attrs, 'id') == 'cart_data_script':
-                    self._next_data = PageContent.CartData
-            case 'span':
-                if search_attribute(attrs, 'class') == 'tag':
-                    self._next_data = PageContent.Tag
-            case 'div':
-                if search_attribute(attrs, 'id').startswith('cartembed_'):
-                    self._cartembed_nesting = 1
-            case 'br':
-                check_description = self._loading_description
-            case 'h1':
-                if self._loading_description and self._tag_cache not in ['h2', 'p']:
-                    self._next_data = PageContent.Description
-                    check_description = True
-            case 'h2':
-                if self._loading_description and self._tag_cache != 'p':
-                    self._next_data = PageContent.Description
-                    check_description = True
-            case 'p':
-                if self._loading_description:
-                    self._next_data = PageContent.Description
-            case 'meta':
-                if search_attribute(attrs, 'property') == 'og:image':
-                    self._current.cover_url = search_attribute(attrs, 'content')
-            case 'a':
-                href = search_attribute(attrs, 'href')
-                if href.endswith('.p8.png'):
-                    self._current.cart_url = _BASE_URL + href
+        
+        if tag == 'title':
+            self._next_data = PageContent.Title
+        elif tag == 'script':
+            if search_attribute(attrs, 'id') == 'cart_data_script':
+                self._next_data = PageContent.CartData
+        elif tag == 'span':
+            if search_attribute(attrs, 'class') == 'tag':
+                self._next_data = PageContent.Tag
+        elif tag == 'div':
+            if search_attribute(attrs, 'id').startswith('cartembed_'):
+                self._cartembed_nesting = 1
+        elif tag == 'br':
+            check_description = self._loading_description
+        elif tag == 'h1':
+            if self._loading_description and self._tag_cache not in ['h2', 'p']:
+                self._next_data = PageContent.Description
+                check_description = True
+        elif tag == 'h2':
+            if self._loading_description and self._tag_cache != 'p':
+                self._next_data = PageContent.Description
+                check_description = True
+        elif tag == 'p':
+            if self._loading_description:
+                self._next_data = PageContent.Description
+        elif tag == 'meta':
+            if search_attribute(attrs, 'property') == 'og:image':
+                self._current.cover_url = search_attribute(attrs, 'content')
+        elif tag == 'a':
+            href = search_attribute(attrs, 'href')
+            if href.endswith('.p8.png'):
+                self._current.cart_url = _BASE_URL + href
 
         self._tag_cache = tag
         self._loading_description = check_description
@@ -127,25 +127,24 @@ class Pico8HTMLParser(HTMLParser):
 
 
     def handle_data(self, data):
-        match self._next_data:
-            case PageContent.Title:
-                self._current.title = data
-            case PageContent.CartData:
-                release_date_str, developer = parse_cart_data(data)
-                self._current.release_date = datetime.strptime(release_date_str, '%Y-%m-%d %H:%M:%S')
-                self._current.developer = developer
-            case PageContent.Tag:
-                match data.strip():
-                    case 'singleplayer':
-                        self._current.players = 1
-                    case 'multiplayer':
-                        self._current.players = 2
-                    case _:
-                        if len(self._current.tag) == 0:
-                            self._current.tag = data
-            case PageContent.Description:
-                self._current.description += '\n' + data
-                self._current.description = self._current.description.strip('\n')
+        if self._next_data == PageContent.Title:
+            self._current.title = data
+        elif self._next_data == PageContent.CartData:
+            release_date_str, developer = parse_cart_data(data)
+            self._current.release_date = datetime.strptime(release_date_str, '%Y-%m-%d %H:%M:%S')
+            self._current.developer = developer
+        elif self._next_data == PageContent.Tag:
+            tag = data.strip()
+            if tag == 'singleplayer':
+                self._current.players = 1
+            elif tag == 'multiplayer':
+                self._current.players = 2
+            else:
+                if len(self._current.tag) == 0:
+                    self._current.tag = data
+        elif self._next_data == PageContent.Description:
+            self._current.description += '\n' + data
+            self._current.description = self._current.description.strip('\n')
 
         self._next_data = PageContent.No
     
