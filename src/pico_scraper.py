@@ -5,8 +5,8 @@ from html.parser import HTMLParser
 from datetime import datetime
 
 
-__BASE_URL = 'https://www.lexaloffle.com'
-__GAME_PAGE_BASE_URL = __BASE_URL + '/bbs/?pid={id}'
+_BASE_URL = 'https://www.lexaloffle.com'
+_GAME_PAGE_BASE_URL = _BASE_URL + '/bbs/?pid={id}'
 
 
 class PageContent(Enum):
@@ -35,6 +35,7 @@ def empty_metadata() -> GameMetadata:
 
 def print_metadata(metadata: GameMetadata):
     print(f'{metadata.title}\n---')
+    print(f'{metadata.cart_url}\n---')
     print(f'{metadata.cover_url}\n---')
     print(f'{metadata.release_date}\n---')
     print(f'{metadata.developer}\n---')
@@ -78,6 +79,7 @@ class Pico8HTMLParser(HTMLParser):
 
 
     def handle_starttag(self, tag, attrs):
+        global _BASE_URL
         check_description = False
         self._cartembed_nesting += 1 if (self._cartembed_nesting > 0) else 0
         
@@ -112,7 +114,7 @@ class Pico8HTMLParser(HTMLParser):
             case 'a':
                 href = search_attribute(attrs, 'href')
                 if href.endswith('.p8.png'):
-                    self._current.cart_url = __BASE_URL + href
+                    self._current.cart_url = _BASE_URL + href
 
         self._tag_cache = tag
         self._loading_description = check_description
@@ -171,7 +173,7 @@ class Pico8HTMLParser(HTMLParser):
 
 
 def get_page_content(id: str) -> str:
-    url = __GAME_PAGE_BASE_URL.format(id = id)
+    url = _GAME_PAGE_BASE_URL.format(id = id)
     content = urllib.request.urlopen(url).read()
     return content.decode("utf-8")
 
