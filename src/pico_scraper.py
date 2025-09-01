@@ -19,6 +19,7 @@ class PageContent(Enum):
 
 @dataclass
 class GameMetadata:
+    id: int
     title: str
     cart_url: str
     cover_url: str
@@ -29,7 +30,7 @@ class GameMetadata:
 
 
 def _empty_metadata():
-    return GameMetadata('', '', '', '', datetime.fromtimestamp(0), [], '')
+    return GameMetadata(0, '', '', '', '', datetime.fromtimestamp(0), [], '')
 
 
 def _parse_cart_data(cart_data):
