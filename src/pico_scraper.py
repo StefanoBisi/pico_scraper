@@ -24,27 +24,15 @@ class GameMetadata:
     cover_url: str
     developer: str
     release_date: datetime
-    tag: str
+    tags: list[str]
     description: str
-    players: int
 
 
-def empty_metadata():
-    return GameMetadata('', '', '', '', datetime.fromtimestamp(0), '', '', 1)
+def _empty_metadata():
+    return GameMetadata('', '', '', '', datetime.fromtimestamp(0), [], '')
 
 
-def print_metadata(metadata):
-    print(f'{metadata.title}\n---')
-    print(f'{metadata.cart_url}\n---')
-    print(f'{metadata.cover_url}\n---')
-    print(f'{metadata.release_date}\n---')
-    print(f'{metadata.developer}\n---')
-    print(f'{metadata.tag}\n---')
-    print(f'{metadata.description}\n---')
-    print(f'{metadata.players}\n---')
-
-
-def parse_cart_data(cart_data):
+def _parse_cart_data(cart_data):
     check_data = False
     for line in cart_data.splitlines():
         if check_data:
@@ -56,7 +44,7 @@ def parse_cart_data(cart_data):
     return '', ''
 
 
-def search_attribute(attrs, name):
+def _search_attribute(attrs, name):
     for attr in attrs:
         if attr[0] == name and attr[1]:
             return attr[1]
@@ -74,26 +62,25 @@ class Pico8HTMLParser(HTMLParser):
 
     def __init__(self):
         HTMLParser.__init__(self)
-        self._current = empty_metadata()
+        self._current = _empty_metadata()
         self._next_data = PageContent.No
 
 
     def handle_starttag(self, tag, attrs):
         global _BASE_URL
         check_description = False
-        self._cartembed_nesting += 1 if (self._cartembed_nesting > 0) else 0
-        
+        self._cartembed_nesting += 1 if (self._cartembed_nesting > 0) else 0      
         
         if tag == 'title':
             self._next_data = PageContent.Title
         elif tag == 'script':
-            if search_attribute(attrs, 'id') == 'cart_data_script':
+            if _search_attribute(attrs, 'id') == 'cart_data_script':
                 self._next_data = PageContent.CartData
         elif tag == 'span':
-            if search_attribute(attrs, 'class') == 'tag':
+            if _search_attribute(attrs, 'class') == 'tag':
                 self._next_data = PageContent.Tag
         elif tag == 'div':
-            if search_attribute(attrs, 'id').startswith('cartembed_'):
+            if _search_attribute(attrs, 'id').startswith('cartembed_'):
                 self._cartembed_nesting = 1
         elif tag == 'br':
             check_description = self._loading_description
@@ -109,10 +96,10 @@ class Pico8HTMLParser(HTMLParser):
             if self._loading_description:
                 self._next_data = PageContent.Description
         elif tag == 'meta':
-            if search_attribute(attrs, 'property') == 'og:image':
-                self._current.cover_url = search_attribute(attrs, 'content')
+            if _search_attribute(attrs, 'property') == 'og:image':
+                self._current.cover_url = _search_attribute(attrs, 'content')
         elif tag == 'a':
-            href = search_attribute(attrs, 'href')
+            href = _search_attribute(attrs, 'href')
             if href.endswith('.p8.png'):
                 self._current.cart_url = _BASE_URL + href
 
@@ -130,18 +117,11 @@ class Pico8HTMLParser(HTMLParser):
         if self._next_data == PageContent.Title:
             self._current.title = data
         elif self._next_data == PageContent.CartData:
-            release_date_str, developer = parse_cart_data(data)
+            release_date_str, developer = _parse_cart_data(data)
             self._current.release_date = datetime.strptime(release_date_str, '%Y-%m-%d %H:%M:%S')
             self._current.developer = developer
         elif self._next_data == PageContent.Tag:
-            tag = data.strip()
-            if tag == 'singleplayer':
-                self._current.players = 1
-            elif tag == 'multiplayer':
-                self._current.players = 2
-            else:
-                if len(self._current.tag) == 0:
-                    self._current.tag = data
+            self._current.tags.append(data.strip())
         elif self._next_data == PageContent.Description:
             self._current.description += '\n' + data
             self._current.description = self._current.description.strip('\n')
@@ -166,19 +146,15 @@ class Pico8HTMLParser(HTMLParser):
 
 
     def get_game_metadata(self, html_content):
-        self._current = empty_metadata()
+        self._current = _empty_metadata()
         self.feed(html_content)
         return self._current
 
 
-def get_page_content(id):
-    url = _GAME_PAGE_BASE_URL.format(id = id)
-    content = urllib.request.urlopen(url).read()
-    return content.decode("utf-8")
-
 
 def get_game_metadata(id):
-    content = get_page_content(id)
+    url = _GAME_PAGE_BASE_URL.format(id = id)
+    content = urllib.request.urlopen(url).read().decode('utf-8')
     parser = Pico8HTMLParser()
     return parser.get_game_metadata(content)
 
@@ -190,14 +166,3 @@ def load_list(filepath):
             id = line.split('#')[0].strip()
             metadata.append(get_game_metadata(id))
     return metadata
-
-
-def main():
-    metadata = load_list('tmp/list.txt')
-    for game in metadata:
-        print_metadata(game)
-        print()
-
-
-if __name__ == '__main__':
-    main()
