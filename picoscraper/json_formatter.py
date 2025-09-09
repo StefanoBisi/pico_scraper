@@ -1,4 +1,4 @@
-import pico_scraper
+from . import GameMetadata
 import json
 from dataclasses import asdict
 from sys import argv
@@ -18,7 +18,7 @@ _JSON_METADATA_STR = '''{{
 
 def from_json(json_data):
     data = json.loads(json_data)
-    return pico_scraper.GameMetadata(
+    return GameMetadata(
         data['id'],
         data['title'],
         data['cart_url'],
@@ -48,13 +48,3 @@ def to_json(metadata):
     print('[{games}]'.format(
         games = ','.join(json_data)
     ))
-
-
-def main():
-    list_path = argv[1] if len(argv) > 1 else 'tmp/list.txt'
-    metadata = pico_scraper.load_list(list_path)
-    to_json(metadata)
-
-
-if __name__ == '__main__':
-    main()

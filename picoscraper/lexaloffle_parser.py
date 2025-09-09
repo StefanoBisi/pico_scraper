@@ -1,7 +1,7 @@
 from enum import Enum
-from dataclasses import dataclass
 import urllib.request
 from html.parser import HTMLParser
+from . import GameMetadata
 from datetime import datetime
 
 
@@ -15,22 +15,6 @@ class PageContent(Enum):
     CartData = 2
     Tag = 3
     Description = 4
-
-
-@dataclass
-class GameMetadata:
-    id: int
-    title: str
-    cart_url: str
-    cover_url: str
-    developer: str
-    release_date: datetime
-    tags: list[str]
-    description: str
-
-
-def _empty_metadata():
-    return GameMetadata(0, '', '', '', '', datetime.fromtimestamp(0), [], '')
 
 
 def _parse_cart_data(cart_data):
@@ -63,7 +47,7 @@ class Pico8HTMLParser(HTMLParser):
 
     def __init__(self):
         HTMLParser.__init__(self)
-        self._current = _empty_metadata()
+        self._current = GameMetadata.empty()
         self._next_data = PageContent.No
 
 
@@ -147,7 +131,7 @@ class Pico8HTMLParser(HTMLParser):
 
 
     def get_game_metadata(self, html_content):
-        self._current = _empty_metadata()
+        self._current = GameMetadata.empty()
         self.feed(html_content)
         return self._current
 
@@ -158,12 +142,3 @@ def get_game_metadata(id):
     content = urllib.request.urlopen(url).read().decode('utf-8')
     parser = Pico8HTMLParser()
     return parser.get_game_metadata(content)
-
-
-def load_list(filepath):
-    metadata = []
-    with open(filepath, 'r') as f:
-        for line in f.readlines():
-            id = line.split('#')[0].strip()
-            metadata.append(get_game_metadata(id))
-    return metadata

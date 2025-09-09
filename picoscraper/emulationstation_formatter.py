@@ -1,4 +1,3 @@
-import pico_scraper
 from sys import argv
 import urllib3
 
@@ -25,7 +24,7 @@ __DUMMY_XML_GAME = '''<game>
 __DUMMY_XML_CLOSE = '</gameList>'
 
 
-def emulationstation_scraper(metadata, download_images = False):
+def emulationstation_formatter(metadata, download_images = False):
     gamelist = __DUMMY_XML_OPEN
     for game in metadata:
         cart_path = f'/home/pi/RetroPie/roms/pico8/{game.title}.p8.png'
@@ -46,13 +45,3 @@ def emulationstation_scraper(metadata, download_images = False):
         )
     gamelist += __DUMMY_XML_CLOSE
     print (gamelist)
-
-
-def main():
-    list_path = argv[1] if len(argv) > 1 else 'tmp/list.txt'
-    metadata = pico_scraper.load_list(list_path)
-    emulationstation_scraper(metadata)
-
-
-if __name__ == '__main__':
-    main()
