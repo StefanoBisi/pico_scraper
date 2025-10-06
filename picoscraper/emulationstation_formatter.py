@@ -1,15 +1,16 @@
 from sys import argv
-import urllib3
-
-def _download_image(url, save_as):
-    http = urllib3.PoolManager()
-    response = http.request('GET', url)
-    with open(save_as, 'wb') as file:
-        file.write(response.data)
+from dataclasses import dataclass
 
 
-__DUMMY_XML_OPEN = '<?xml version="1.0"?>\n<gameList>'
-__DUMMY_XML_GAME = '''<game>
+@dataclass
+class EmulationstationFormatter:
+
+    cart_dir: str
+    cover_dir: str
+
+    __DUMMY_XML_OPEN = '<?xml version="1.0"?>\n<gameList>'
+    __DUMMY_XML_GAME = '''
+    <game>
         <path>{cart}</path>
     	<name>{name}</name>
     	<desc>{description}</desc>
@@ -19,21 +20,14 @@ __DUMMY_XML_GAME = '''<game>
     	<publisher>Lexaloffe</publisher>
     	<genre>{tag}</genre>
     	<players>{players_nr}</players>
-    </game>
-'''
-__DUMMY_XML_CLOSE = '</gameList>'
+    </game>'''
+    __DUMMY_XML_CLOSE = '\n</gameList>'
 
+    def format_game(self, game):
+        cart_path = f'{self.cart_dir}{game.title}.p8.png'
+        cover_path = f'{self.cover_dir}{game.title}.png'
 
-def emulationstation_formatter(metadata, download_images = False):
-    gamelist = __DUMMY_XML_OPEN
-    for game in metadata:
-        cart_path = f'/home/pi/RetroPie/roms/pico8/{game.title}.p8.png'
-        cover_path = f'/home/pi/.emulationstation/downloaded_images/pico8/{game.title}.png'
-        if download_images:
-            _download_image(game.cart_url, cart_path)
-            _download_image(game.cover_url, cover_path)
-
-        gamelist += __DUMMY_XML_GAME.format(
+        return self.__DUMMY_XML_GAME.format(
             cart = cart_path,
             name = game.title,
             description = game.description,
@@ -42,6 +36,11 @@ def emulationstation_formatter(metadata, download_images = False):
             developer = game.developer,
             tag = ','.join(game.tags),
             players_nr = 2 if 'multiplayer' in game.tags else 1
-        )
-    gamelist += __DUMMY_XML_CLOSE
-    print (gamelist)
+        )    
+
+    def format(self, metadata):
+        gamelist = self.__DUMMY_XML_OPEN
+        for game in metadata:
+            gamelist += self.format_game(game)
+        gamelist += self.__DUMMY_XML_CLOSE
+        return gamelist

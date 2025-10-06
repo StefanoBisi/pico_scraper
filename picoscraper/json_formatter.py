@@ -30,21 +30,22 @@ def from_json(json_data):
     )
 
 
-def to_json(metadata):
-    json_data = []
-    for game in metadata:
-        json_data.append(
-            _JSON_METADATA_STR.format(
-                id = game.id,
-                title = json.dumps(game.title),
-                cart_url = json.dumps(game.cart_url),
-                cover_url = json.dumps(game.cover_url),
-                developer = json.dumps(game.developer),
-                release_date = json.dumps(game.release_date.strftime('%Y%m%dT%H%M%S')),
-                tags = json.dumps(game.tags),
-                description = json.dumps(game.description)
-            )
+class JsonFormatter:
+
+    def format_game(self, game):
+        return _JSON_METADATA_STR.format(
+            id = game.id,
+            title = json.dumps(game.title),
+            cart_url = json.dumps(game.cart_url),
+            cover_url = json.dumps(game.cover_url),
+            developer = json.dumps(game.developer),
+            release_date = json.dumps(game.release_date.strftime('%Y%m%dT%H%M%S')),
+            tags = json.dumps(game.tags),
+            description = json.dumps(game.description)
         )
-    print('[{games}]'.format(
-        games = ','.join(json_data)
-    ))
+    
+    def format(self, metadata):
+        json_data = []
+        for game in metadata:
+            json_data.append(self.format_game(game))
+        return '[{games}]'.format(games = ','.join(json_data))
