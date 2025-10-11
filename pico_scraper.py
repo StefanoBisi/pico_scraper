@@ -16,12 +16,16 @@ class OutputType(Enum):
 
 def get_args():
     parser = argparse.ArgumentParser(prog = 'pico_scraper')
-    parser.add_argument('--cart-dir', default='')
-    parser.add_argument('--cover-dir', default='')
-    parser.add_argument('--no-downloads', action='store_true')
-    parser.add_argument('--input-file', default='')
-    parser.add_argument('--output-file', default='')
-    parser.add_argument('output_type', type = OutputType, choices=list(OutputType))
+    parser.add_argument('--cart-dir', default='', help='The directory where game carts are stored and where they will be downloaded.')
+    parser.add_argument('--cover-dir', default='', help='The directory where game covers are stored and where they will be downloaded.')
+    parser.add_argument('--no-downloads', action='store_true', help='''Toggle if you want to provide the cart and/or cover directories
+                        but do not want to download anything in them.''')
+    parser.add_argument('--input-file', default='', help='''The list file with the games to scrape.
+                        Each line of the file must contain the game's id.
+                        Everything after '#' is ignored.
+                        If not provided, stdin will be used instead''')
+    parser.add_argument('--output-file', default='', help='The output file. If not provided, stdout will be used instead.')
+    parser.add_argument('output_type', type = OutputType, choices=list(OutputType), help='The type of output produced.')
     return parser.parse_args(sys.argv[1:])
 
 
