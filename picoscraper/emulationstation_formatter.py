@@ -24,8 +24,8 @@ class EmulationstationFormatter:
     __DUMMY_XML_CLOSE = '\n</gameList>'
 
     def format_game(self, game):
-        cart_path = f'{self.cart_dir}{game.title}.p8.png'
-        cover_path = f'{self.cover_dir}{game.title}.png'
+        cart_path = f'{self.cart_dir}/{game.title}.p8.png'
+        cover_path = f'{self.cover_dir}/{game.title}.png'
 
         return self.__DUMMY_XML_GAME.format(
             cart = cart_path,
