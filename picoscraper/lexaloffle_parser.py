@@ -41,7 +41,7 @@ class Pico8HTMLParser(HTMLParser):
     _current: GameMetadata
     _next_data: PageContent
     _tag_cache = ''
-    _cartembed_nesting = 0
+    _gamediv_nesting = 0
     _loading_description = False
 
 
@@ -53,8 +53,7 @@ class Pico8HTMLParser(HTMLParser):
 
     def handle_starttag(self, tag, attrs):
         global _BASE_URL
-        check_description = False
-        self._cartembed_nesting += 1 if (self._cartembed_nesting > 0) else 0      
+        check_description = False      
         
         if tag == 'title':
             self._next_data = PageContent.Title
@@ -65,8 +64,13 @@ class Pico8HTMLParser(HTMLParser):
             if _search_attribute(attrs, 'class') == 'tag':
                 self._next_data = PageContent.Tag
         elif tag == 'div':
-            if _search_attribute(attrs, 'id').startswith('cartembed_'):
-                self._cartembed_nesting = 1
+            if _search_attribute(attrs, 'id') == 'p':
+                # The 'p' div contains all the data.
+                # Data outside of this div shouldn't be considered as it could comprmoise the result
+                # e.g.: embedded carts in the comment section could change the cart_url property
+                self._gamediv_nesting = 1
+            else:
+                self._gamediv_nesting += 1 if (self._gamediv_nesting > 0) else 0
         elif tag == 'br':
             check_description = self._loading_description
         elif tag == 'h1':
@@ -84,18 +88,19 @@ class Pico8HTMLParser(HTMLParser):
             if _search_attribute(attrs, 'property') == 'og:image':
                 self._current.cover_url = _search_attribute(attrs, 'content')
         elif tag == 'a':
-            href = _search_attribute(attrs, 'href')
-            if href.endswith('.p8.png'):
-                self._current.cart_url = _BASE_URL + href
+            if self._gamediv_nesting > 0:
+                href = _search_attribute(attrs, 'href')
+                if href.endswith('.p8.png'):
+                    self._current.cart_url = _BASE_URL + href
 
         self._tag_cache = tag
         self._loading_description = check_description
 
 
     def handle_endtag(self, tag):
-        if self._cartembed_nesting > 0:
-            self._cartembed_nesting -= 1
-            self._loading_description = (self._cartembed_nesting) == 0
+        if self._gamediv_nesting > 0:
+            self._gamediv_nesting -= 1
+            self._loading_description = (self._gamediv_nesting) == 0
 
 
     def handle_data(self, data):
