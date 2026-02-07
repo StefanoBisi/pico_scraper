@@ -36,6 +36,8 @@ def check_existence(path):
 
 
 def check_permission(path):
+    if not os.path.exists(path):
+        return
     if not (os.access(path, os.R_OK) and os.access(path, os.W_OK)):
         sys.stderr.write(f'Error: No read/write permissions for {path}\n')
         exit(1)
@@ -57,9 +59,12 @@ def check_args(args):
         args.cover_dir = args.cover_dir.rstrip('/')
         check_dir(args.cover_dir)
     
-    check_existence(args.input_file)
-    check_permission(args.input_file)
-    check_permission(args.output_file)
+    if args.input_file:
+        check_existence(args.input_file)
+        check_permission(args.input_file)
+    
+    if args.output_file:
+        check_permission(args.output_file)
 
 
 def load_file(filepath):
