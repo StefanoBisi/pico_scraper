@@ -58,6 +58,7 @@ class Pico8HTMLParser(HTMLParser):
         if tag == 'title':
             self._next_data = PageContent.Title
         elif tag == 'script':
+            self._next_data = PageContent.No
             if _search_attribute(attrs, 'id') == 'cart_data_script':
                 self._next_data = PageContent.CartData
         elif tag == 'span':
@@ -71,18 +72,17 @@ class Pico8HTMLParser(HTMLParser):
                 self._gamediv_nesting = 1
             else:
                 self._gamediv_nesting += 1 if (self._gamediv_nesting > 0) else 0
-        elif tag == 'br':
-            check_description = self._loading_description
         elif tag == 'h1':
-            if self._loading_description and self._tag_cache not in ['h2', 'p']:
+            if self._gamediv_nesting > 0:
                 self._next_data = PageContent.Description
-                check_description = True
         elif tag == 'h2':
-            if self._loading_description and self._tag_cache != 'p':
+            if self._gamediv_nesting > 0:
                 self._next_data = PageContent.Description
-                check_description = True
         elif tag == 'p':
-            if self._loading_description:
+            if self._gamediv_nesting > 0:
+                self._next_data = PageContent.Description
+        elif tag == 'strong':
+            if self._gamediv_nesting > 0:
                 self._next_data = PageContent.Description
         elif tag == 'meta':
             if _search_attribute(attrs, 'property') == 'og:image':
@@ -91,14 +91,14 @@ class Pico8HTMLParser(HTMLParser):
             if self._gamediv_nesting > 0:
                 href = _search_attribute(attrs, 'href')
                 if href.endswith('.p8.png'):
-                    self._current.cart_url = _BASE_URL + href
+                    self._current.cart_url = _BASE_URL + href    
 
         self._tag_cache = tag
         self._loading_description = check_description
 
 
     def handle_endtag(self, tag):
-        if self._gamediv_nesting > 0:
+        if tag == 'div' and self._gamediv_nesting > 0:
             self._gamediv_nesting -= 1
             self._loading_description = (self._gamediv_nesting) == 0
 
@@ -146,4 +146,6 @@ def get_game_metadata(id):
     url = _GAME_PAGE_BASE_URL.format(id = id)
     content = urllib.request.urlopen(url).read().decode('utf-8')
     parser = Pico8HTMLParser()
-    return parser.get_game_metadata(content)
+    game_data = parser.get_game_metadata(content)
+    game_data.id = int(id)
+    return game_data
