@@ -104,12 +104,12 @@ def main():
             if len(game.cart_url) == 0:
                 sys.stderr.write(f'Error: Missing cart url for {game.title}.\n')
                 exit(1)
-            download_image(game.cart_url, f'{args.cart_dir}/{game.title}.p8.png')
+            download_image(game.cart_url, f'{args.cart_dir}/{picoscraper.fix_filename(game.title)}.p8.png')
         if len(args.cover_dir) > 0 and not args.no_downloads:
             if len(game.cart_url) == 0:
                 sys.stderr.write(f'Error: Missing cover url for {game.title}.\n')
                 exit(1)
-            download_image(game.cover_url, f'{args.cover_dir}/{game.title}.png')
+            download_image(game.cover_url, f'{args.cover_dir}/{picoscraper.fix_filename(game.title)}.png')
 
     output = ''
     if args.output_type == OutputType.emulationstation:
