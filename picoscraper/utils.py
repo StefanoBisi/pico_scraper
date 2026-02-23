@@ -7,4 +7,7 @@ def fix_filename(filename):
             .replace('!', '_')\
             .replace('.', '_')\
             .replace('!', '_')\
-            .replace('-', '_')
+            .replace('-', '_')\
+            .replace('<', '_')\
+            .replace('>', '_')\
+            .replace('&', '_')

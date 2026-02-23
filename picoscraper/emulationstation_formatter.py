@@ -1,6 +1,7 @@
 from sys import argv
 from dataclasses import dataclass
 from . import utils
+from xml.sax.saxutils import escape
 
 
 @dataclass
@@ -30,12 +31,12 @@ class EmulationstationFormatter:
 
         return self.__DUMMY_XML_GAME.format(
             cart = cart_path,
-            name = game.title,
-            description = game.description,
+            name = escape(game.title),
+            description = escape(game.description),
             cover = cover_path,
             release_date = game.release_date.strftime('%Y%m%dT%H%M%S'),
-            developer = game.developer,
-            tag = ','.join(game.tags),
+            developer = escape(game.developer),
+            tag = escape(','.join(game.tags)),
             players_nr = 2 if 'multiplayer' in game.tags else 1
         )    
 
