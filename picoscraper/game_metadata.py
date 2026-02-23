@@ -16,4 +16,8 @@ class GameMetadata:
 
     @staticmethod
     def empty():
-        return GameMetadata(0, '', '', '', '', datetime.fromtimestamp(0), [], '')    
+        return GameMetadata(0, '', '', '', '', datetime.fromtimestamp(0), [], '')
+    
+    @staticmethod
+    def new(id):
+        return GameMetadata(id, '', '', '', '', datetime.fromtimestamp(0), [], '')

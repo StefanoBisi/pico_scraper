@@ -43,6 +43,7 @@ class Pico8HTMLParser(HTMLParser):
     _tag_cache = ''
     _gamediv_nesting = 0
     _loading_description = False
+    _gamedata_tag = 'p'
 
 
     def __init__(self):
@@ -65,7 +66,7 @@ class Pico8HTMLParser(HTMLParser):
             if _search_attribute(attrs, 'class') == 'tag':
                 self._next_data = PageContent.Tag
         elif tag == 'div':
-            if _search_attribute(attrs, 'id') == 'p':
+            if _search_attribute(attrs, 'id') == self._gamedata_tag:
                 # The 'p' div contains all the data.
                 # Data outside of this div shouldn't be considered as it could comprmoise the result
                 # e.g.: embedded carts in the comment section could change the cart_url property
@@ -135,8 +136,9 @@ class Pico8HTMLParser(HTMLParser):
         pass
 
 
-    def get_game_metadata(self, html_content):
-        self._current = GameMetadata.empty()
+    def get_game_metadata(self, id, html_content):
+        self._current = GameMetadata.new(id)
+        self._gamedata_tag = f'p{id}'
         self.feed(html_content)
         return self._current
 
@@ -146,6 +148,6 @@ def get_game_metadata(id):
     url = _GAME_PAGE_BASE_URL.format(id = id)
     content = urllib.request.urlopen(url).read().decode('utf-8')
     parser = Pico8HTMLParser()
-    game_data = parser.get_game_metadata(content)
+    game_data = parser.get_game_metadata(id, content)
     game_data.id = int(id)
     return game_data
